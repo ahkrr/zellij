@@ -2249,14 +2249,16 @@ impl Row {
         }
     }
     pub fn insert_character_at(&mut self, terminal_character: TerminalCharacter, x: usize) {
-        match self.columns.len().cmp(&x) {
+        let insert_position = self.absolute_character_index(x);
+        match self.columns.len().cmp(&insert_position) {
             Ordering::Equal => self.columns.push_back(terminal_character),
             Ordering::Less => {
-                self.columns.resize(x, EMPTY_TERMINAL_CHARACTER);
+                self.columns
+                    .resize(insert_position, EMPTY_TERMINAL_CHARACTER);
                 self.columns.push_back(terminal_character);
             }
             Ordering::Greater => {
-                self.columns.insert(x, terminal_character);
+                self.columns.insert(insert_position, terminal_character);
             }
         }
     }
@@ -2365,8 +2367,9 @@ impl Row {
         self.columns.is_empty()
     }
     pub fn delete_and_return_character(&mut self, x: usize) -> Option<TerminalCharacter> {
-        if x < self.columns.len() {
-            Some(self.columns.remove(x).unwrap()) // TODO: just return the remove part?
+        let erase_position = self.absolute_character_index(x);
+        if erase_position < self.columns.len() {
+            Some(self.columns.remove(erase_position).unwrap()) // TODO: just return the remove part?
         } else {
             None
         }

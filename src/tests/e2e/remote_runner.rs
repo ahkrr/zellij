@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use zellij_tile::data::Palette;
 
@@ -67,13 +68,27 @@ fn start_zellij(channel: &mut ssh2::Channel) {
     channel.flush().unwrap();
 }
 
-fn start_zellij_in_session(channel: &mut ssh2::Channel, session_name: &str) {
+fn start_zellij_mirrored_session(channel: &mut ssh2::Channel) {
     stop_zellij(channel);
     channel
         .write_all(
             format!(
-                "{} --session {}\n",
-                ZELLIJ_EXECUTABLE_LOCATION, session_name
+                "{} --session {} options --mirror-session true\n",
+                ZELLIJ_EXECUTABLE_LOCATION, SESSION_NAME
+            )
+            .as_bytes(),
+        )
+        .unwrap();
+    channel.flush().unwrap();
+}
+
+fn start_zellij_in_session(channel: &mut ssh2::Channel, session_name: &str, mirrored: bool) {
+    stop_zellij(channel);
+    channel
+        .write_all(
+            format!(
+                "{} --session {} options --mirror-session {}\n",
+                ZELLIJ_EXECUTABLE_LOCATION, session_name, mirrored
             )
             .as_bytes(),
         )
@@ -121,8 +136,8 @@ fn read_from_channel(
     last_snapshot: &Arc<Mutex<String>>,
     cursor_coordinates: &Arc<Mutex<(usize, usize)>>,
     pane_geom: &PaneGeom,
-) -> (Arc<Mutex<bool>>, std::thread::JoinHandle<()>) {
-    let should_keep_running = Arc::new(Mutex::new(true));
+) -> (Arc<AtomicBool>, std::thread::JoinHandle<()>) {
+    let should_keep_running = Arc::new(AtomicBool::new(true));
     let thread = std::thread::Builder::new()
         .name("read_thread".into())
         .spawn({
@@ -137,7 +152,7 @@ fn read_from_channel(
             move || {
                 let mut should_sleep = false;
                 loop {
-                    if !*should_keep_running.lock().unwrap() {
+                    if !should_keep_running.load(Ordering::SeqCst) {
                         break;
                     }
                     if should_sleep {
@@ -293,7 +308,7 @@ pub struct RemoteRunner {
     panic_on_no_retries_left: bool,
     last_snapshot: Arc<Mutex<String>>,
     cursor_coordinates: Arc<Mutex<(usize, usize)>>, // x, y
-    reader_thread: (Arc<Mutex<bool>>, std::thread::JoinHandle<()>),
+    reader_thread: (Arc<AtomicBool>, std::thread::JoinHandle<()>),
     pub test_timed_out: bool,
 }
 
@@ -333,13 +348,48 @@ impl RemoteRunner {
             reader_thread,
         }
     }
+    pub fn new_mirrored_session(win_size: Size) -> Self {
+        let sess = ssh_connect();
+        let mut channel = sess.channel_session().unwrap();
+        let mut rows = Dimension::fixed(win_size.rows);
+        let mut cols = Dimension::fixed(win_size.cols);
+        rows.set_inner(win_size.rows);
+        cols.set_inner(win_size.cols);
+        let pane_geom = PaneGeom {
+            x: 0,
+            y: 0,
+            rows,
+            cols,
+        };
+        setup_remote_environment(&mut channel, win_size);
+        start_zellij_mirrored_session(&mut channel);
+        let channel = Arc::new(Mutex::new(channel));
+        let last_snapshot = Arc::new(Mutex::new(String::new()));
+        let cursor_coordinates = Arc::new(Mutex::new((0, 0)));
+        sess.set_blocking(false);
+        let reader_thread =
+            read_from_channel(&channel, &last_snapshot, &cursor_coordinates, &pane_geom);
+        RemoteRunner {
+            steps: vec![],
+            channel,
+            currently_running_step: None,
+            current_step_index: 0,
+            retries_left: RETRIES,
+            retry_pause_ms: 100,
+            test_timed_out: false,
+            panic_on_no_retries_left: true,
+            last_snapshot,
+            cursor_coordinates,
+            reader_thread,
+        }
+    }
     pub fn kill_running_sessions(win_size: Size) {
         let sess = ssh_connect();
         let mut channel = sess.channel_session().unwrap();
         setup_remote_environment(&mut channel, win_size);
         start_zellij(&mut channel);
     }
-    pub fn new_with_session_name(win_size: Size, session_name: &str) -> Self {
+    pub fn new_with_session_name(win_size: Size, session_name: &str, mirrored: bool) -> Self {
         // notice that this method does not have a timeout, so use with caution!
         let sess = ssh_connect_without_timeout();
         let mut channel = sess.channel_session().unwrap();
@@ -354,7 +404,7 @@ impl RemoteRunner {
             cols,
         };
         setup_remote_environment(&mut channel, win_size);
-        start_zellij_in_session(&mut channel, session_name);
+        start_zellij_in_session(&mut channel, session_name, mirrored);
         let channel = Arc::new(Mutex::new(channel));
         let last_snapshot = Arc::new(Mutex::new(String::new()));
         let cursor_coordinates = Arc::new(Mutex::new((0, 0)));
@@ -557,6 +607,6 @@ impl Drop for RemoteRunner {
     fn drop(&mut self) {
         let _ = self.channel.lock().unwrap().close();
         let reader_thread_running = &mut self.reader_thread.0;
-        *reader_thread_running.lock().unwrap() = false;
+        reader_thread_running.store(false, Ordering::SeqCst);
     }
 }

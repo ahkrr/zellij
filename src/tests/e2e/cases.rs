@@ -79,7 +79,6 @@ pub fn starts_with_one_terminal() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size);
         let last_snapshot = runner.take_snapshot_after(Step {
             name: "Wait for app to load",
@@ -112,7 +111,6 @@ pub fn split_terminals_vertically() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size).add_step(Step {
             name: "Split pane to the right",
             instruction: |mut remote_terminal: RemoteTerminal| -> bool {
@@ -157,7 +155,6 @@ pub fn cannot_split_terminals_vertically_when_active_terminal_is_too_small() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size).add_step(Step {
             name: "Split pane to the right",
             instruction: |mut remote_terminal: RemoteTerminal| -> bool {
@@ -178,7 +175,6 @@ pub fn cannot_split_terminals_vertically_when_active_terminal_is_too_small() {
             name: "Make sure only one pane appears",
             instruction: |remote_terminal: RemoteTerminal| -> bool {
                 let mut step_is_complete = false;
-                // if remote_terminal.cursor_position_is(3, 2) && remote_terminal.snapshot_contains("...")
                 if remote_terminal.cursor_position_is(3, 2) {
                     // ... is the truncated tip line
                     step_is_complete = true;
@@ -206,7 +202,6 @@ pub fn scrolling_inside_a_pane() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size)
             .retry_pause_ms(1000) // we need a longer retry period here because it takes some time to fill the pty buffer
             .add_step(Step {
@@ -307,7 +302,6 @@ pub fn toggle_pane_fullscreen() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size)
             .add_step(Step {
                 name: "Split pane to the right",
@@ -372,7 +366,6 @@ pub fn open_new_tab() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size)
             .add_step(Step {
                 name: "Split pane to the right",
@@ -441,7 +434,6 @@ pub fn close_tab() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size)
             .add_step(Step {
                 name: "Split pane to the right",
@@ -525,7 +517,6 @@ pub fn close_pane() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size)
             .add_step(Step {
                 name: "Split pane to the right",
@@ -588,9 +579,8 @@ pub fn exit_zellij() {
         rows: 24,
     };
     let mut test_attempts = 10;
-    let last_snapshot = loop {
+    let last_snapshot = {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size).add_step(Step {
             name: "Wait for app to load",
             instruction: |mut remote_terminal: RemoteTerminal| -> bool {
@@ -604,7 +594,7 @@ pub fn exit_zellij() {
             },
         });
         runner.run_all_steps();
-        break runner.take_snapshot_after(Step {
+        runner.take_snapshot_after(Step {
             name: "Wait for app to exit",
             instruction: |remote_terminal: RemoteTerminal| -> bool {
                 let mut step_is_complete = false;
@@ -615,7 +605,7 @@ pub fn exit_zellij() {
                 }
                 step_is_complete
             },
-        });
+        })
     };
     assert!(last_snapshot.contains("Bye from Zellij!"));
 }
@@ -630,7 +620,6 @@ pub fn closing_last_pane_exits_zellij() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size).add_step(Step {
             name: "Close pane",
             instruction: |mut remote_terminal: RemoteTerminal| -> bool {
@@ -673,7 +662,6 @@ pub fn typing_exit_closes_pane() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size)
             .add_step(Step {
                 name: "Split pane to the right",
@@ -739,7 +727,6 @@ pub fn resize_pane() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size)
             .add_step(Step {
                 name: "Split pane to the right",
@@ -804,7 +791,6 @@ pub fn lock_mode() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size)
             .add_step(Step {
                 name: "Enter lock mode",
@@ -865,7 +851,6 @@ pub fn resize_terminal_window() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size)
             .add_step(Step {
                 name: "Split pane to the right",
@@ -927,8 +912,7 @@ pub fn detach_and_attach_session() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
-        let mut runner = RemoteRunner::new(fake_win_size)
+        let mut runner = RemoteRunner::new_mirrored_session(fake_win_size)
             .add_step(Step {
                 name: "Split pane to the right",
                 instruction: |mut remote_terminal: RemoteTerminal| -> bool {
@@ -1015,7 +999,6 @@ pub fn accepts_basic_layout() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new_with_layout(fake_win_size, layout_file_name);
         runner.run_all_steps();
         let last_snapshot = runner.take_snapshot_after(Step {
@@ -1051,7 +1034,6 @@ fn focus_pane_with_mouse() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size)
             .add_step(Step {
                 name: "Split pane to the right",
@@ -1112,7 +1094,6 @@ pub fn scrolling_inside_a_pane_with_mouse() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size)
             .retry_pause_ms(1000) // we need a longer retry period here because it takes some time to fill the pty buffer
             .add_step(Step {
@@ -1209,7 +1190,6 @@ pub fn start_without_pane_frames() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new_without_frames(fake_win_size).add_step(Step {
             name: "Split pane to the right",
             instruction: |mut remote_terminal: RemoteTerminal| -> bool {
@@ -1260,21 +1240,21 @@ pub fn mirrored_sessions() {
         // here we connect with one runner, then connect with another, perform some actions and
         // then make sure they were also reflected (mirrored) in the first runner afterwards
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
-        let mut first_runner = RemoteRunner::new_with_session_name(fake_win_size, session_name)
-            .dont_panic()
-            .add_step(Step {
-                name: "Wait for app to load",
-                instruction: |mut remote_terminal: RemoteTerminal| -> bool {
-                    let mut step_is_complete = false;
-                    if remote_terminal.status_bar_appears()
-                        && remote_terminal.cursor_position_is(3, 2)
-                    {
-                        step_is_complete = true;
-                    }
-                    step_is_complete
-                },
-            });
+        let mut first_runner =
+            RemoteRunner::new_with_session_name(fake_win_size, session_name, true)
+                .dont_panic()
+                .add_step(Step {
+                    name: "Wait for app to load",
+                    instruction: |mut remote_terminal: RemoteTerminal| -> bool {
+                        let mut step_is_complete = false;
+                        if remote_terminal.status_bar_appears()
+                            && remote_terminal.cursor_position_is(3, 2)
+                        {
+                            step_is_complete = true;
+                        }
+                        step_is_complete
+                    },
+                });
         first_runner.run_all_steps();
 
         let mut second_runner = RemoteRunner::new_existing_session(fake_win_size, session_name)
@@ -1398,6 +1378,283 @@ pub fn mirrored_sessions() {
 
 #[test]
 #[ignore]
+pub fn multiple_users_in_same_pane_and_tab() {
+    let fake_win_size = Size {
+        cols: 120,
+        rows: 24,
+    };
+    let mut test_attempts = 10;
+    let session_name = "multiple_users_in_same_pane_and_tab";
+    let (first_runner_snapshot, second_runner_snapshot) = loop {
+        // here we connect with one runner, then connect with another, perform some actions and
+        // then make sure they were also reflected (mirrored) in the first runner afterwards
+        RemoteRunner::kill_running_sessions(fake_win_size);
+        let mut first_runner =
+            RemoteRunner::new_with_session_name(fake_win_size, session_name, false)
+                .dont_panic()
+                .add_step(Step {
+                    name: "Wait for app to load",
+                    instruction: |mut remote_terminal: RemoteTerminal| -> bool {
+                        let mut step_is_complete = false;
+                        if remote_terminal.status_bar_appears()
+                            && remote_terminal.cursor_position_is(3, 2)
+                        {
+                            step_is_complete = true;
+                        }
+                        step_is_complete
+                    },
+                });
+        first_runner.run_all_steps();
+
+        let mut second_runner = RemoteRunner::new_existing_session(fake_win_size, session_name)
+            .dont_panic()
+            .add_step(Step {
+                name: "Wait for app to load",
+                instruction: |mut remote_terminal: RemoteTerminal| -> bool {
+                    let mut step_is_complete = false;
+                    if remote_terminal.status_bar_appears()
+                        && remote_terminal.cursor_position_is(3, 2)
+                    {
+                        step_is_complete = true;
+                    }
+                    step_is_complete
+                },
+            });
+        second_runner.run_all_steps();
+
+        if first_runner.test_timed_out || second_runner.test_timed_out {
+            test_attempts -= 1;
+            continue;
+        }
+        let second_runner_snapshot = second_runner.take_snapshot_after(Step {
+            name: "take snapshot after",
+            instruction: |remote_terminal: RemoteTerminal| -> bool {
+                let mut step_is_complete = false;
+                if remote_terminal.cursor_position_is(3, 2)
+                    && remote_terminal.snapshot_contains("MY FOCUS")
+                {
+                    // cursor is back in the first tab
+                    step_is_complete = true;
+                }
+                step_is_complete
+            },
+        });
+        let first_runner_snapshot = first_runner.take_snapshot_after(Step {
+            name: "take snapshot after",
+            instruction: |remote_terminal: RemoteTerminal| -> bool {
+                let mut step_is_complete = false;
+                if remote_terminal.cursor_position_is(3, 2)
+                    && remote_terminal.snapshot_contains("MY FOCUS")
+                {
+                    // cursor is back in the first tab
+                    step_is_complete = true;
+                }
+                step_is_complete
+            },
+        });
+
+        if (first_runner.test_timed_out || second_runner.test_timed_out) && test_attempts >= 0 {
+            test_attempts -= 1;
+            continue;
+        } else {
+            break (first_runner_snapshot, second_runner_snapshot);
+        }
+    };
+    assert_snapshot!(first_runner_snapshot);
+    assert_snapshot!(second_runner_snapshot);
+}
+
+#[test]
+#[ignore]
+pub fn multiple_users_in_different_panes_and_same_tab() {
+    let fake_win_size = Size {
+        cols: 120,
+        rows: 24,
+    };
+    let mut test_attempts = 10;
+    let session_name = "multiple_users_in_same_pane_and_tab";
+    let (first_runner_snapshot, second_runner_snapshot) = loop {
+        // here we connect with one runner, then connect with another, perform some actions and
+        // then make sure they were also reflected (mirrored) in the first runner afterwards
+        RemoteRunner::kill_running_sessions(fake_win_size);
+        let mut first_runner =
+            RemoteRunner::new_with_session_name(fake_win_size, session_name, false)
+                .dont_panic()
+                .add_step(Step {
+                    name: "Wait for app to load",
+                    instruction: |mut remote_terminal: RemoteTerminal| -> bool {
+                        let mut step_is_complete = false;
+                        if remote_terminal.status_bar_appears()
+                            && remote_terminal.cursor_position_is(3, 2)
+                        {
+                            step_is_complete = true;
+                        }
+                        step_is_complete
+                    },
+                });
+        first_runner.run_all_steps();
+
+        let mut second_runner = RemoteRunner::new_existing_session(fake_win_size, session_name)
+            .dont_panic()
+            .add_step(Step {
+                name: "Split pane to the right",
+                instruction: |mut remote_terminal: RemoteTerminal| -> bool {
+                    let mut step_is_complete = false;
+                    if remote_terminal.status_bar_appears()
+                        && remote_terminal.cursor_position_is(3, 2)
+                    {
+                        remote_terminal.send_key(&PANE_MODE);
+                        remote_terminal.send_key(&SPLIT_RIGHT_IN_PANE_MODE);
+                        // back to normal mode after split
+                        remote_terminal.send_key(&ENTER);
+                        step_is_complete = true;
+                    }
+                    step_is_complete
+                },
+            });
+        second_runner.run_all_steps();
+
+        if first_runner.test_timed_out || second_runner.test_timed_out {
+            test_attempts -= 1;
+            continue;
+        }
+
+        let second_runner_snapshot = second_runner.take_snapshot_after(Step {
+            name: "take snapshot after",
+            instruction: |remote_terminal: RemoteTerminal| -> bool {
+                let mut step_is_complete = false;
+                if remote_terminal.cursor_position_is(63, 2) && remote_terminal.tip_appears() {
+                    // cursor is in the newly opened second pane
+                    step_is_complete = true;
+                }
+                step_is_complete
+            },
+        });
+
+        let first_runner_snapshot = first_runner.take_snapshot_after(Step {
+            name: "take snapshot after",
+            instruction: |remote_terminal: RemoteTerminal| -> bool {
+                let mut step_is_complete = false;
+                if remote_terminal.cursor_position_is(3, 2)
+                    && remote_terminal.snapshot_contains("││$")
+                {
+                    // cursor is back in the first tab
+                    step_is_complete = true;
+                }
+                step_is_complete
+            },
+        });
+
+        if (first_runner.test_timed_out || second_runner.test_timed_out) && test_attempts >= 0 {
+            test_attempts -= 1;
+            continue;
+        } else {
+            break (first_runner_snapshot, second_runner_snapshot);
+        }
+    };
+    assert_snapshot!(first_runner_snapshot);
+    assert_snapshot!(second_runner_snapshot);
+}
+
+#[test]
+#[ignore]
+pub fn multiple_users_in_different_tabs() {
+    let fake_win_size = Size {
+        cols: 120,
+        rows: 24,
+    };
+    let mut test_attempts = 10;
+    let session_name = "multiple_users_in_different_tabs";
+    let (first_runner_snapshot, second_runner_snapshot) = loop {
+        // here we connect with one runner, then connect with another, perform some actions and
+        // then make sure they were also reflected (mirrored) in the first runner afterwards
+        RemoteRunner::kill_running_sessions(fake_win_size);
+        let mut first_runner =
+            RemoteRunner::new_with_session_name(fake_win_size, session_name, false)
+                .dont_panic()
+                .add_step(Step {
+                    name: "Wait for app to load",
+                    instruction: |mut remote_terminal: RemoteTerminal| -> bool {
+                        let mut step_is_complete = false;
+                        if remote_terminal.status_bar_appears()
+                            && remote_terminal.cursor_position_is(3, 2)
+                        {
+                            step_is_complete = true;
+                        }
+                        step_is_complete
+                    },
+                });
+        first_runner.run_all_steps();
+
+        let mut second_runner = RemoteRunner::new_existing_session(fake_win_size, session_name)
+            .dont_panic()
+            .add_step(Step {
+                name: "Open new tab",
+                instruction: |mut remote_terminal: RemoteTerminal| -> bool {
+                    let mut step_is_complete = false;
+                    if remote_terminal.cursor_position_is(3, 2) && remote_terminal.tip_appears() {
+                        // cursor is in the newly opened second pane
+                        remote_terminal.send_key(&TAB_MODE);
+                        remote_terminal.send_key(&NEW_TAB_IN_TAB_MODE);
+                        // back to normal mode after split
+                        remote_terminal.send_key(&ENTER);
+                        step_is_complete = true;
+                    }
+                    step_is_complete
+                },
+            });
+        second_runner.run_all_steps();
+
+        if first_runner.test_timed_out || second_runner.test_timed_out {
+            test_attempts -= 1;
+            continue;
+        }
+
+        let second_runner_snapshot = second_runner.take_snapshot_after(Step {
+            name: "Wait for new tab to open",
+            instruction: |remote_terminal: RemoteTerminal| -> bool {
+                let mut step_is_complete = false;
+                if remote_terminal.cursor_position_is(3, 2)
+                    && remote_terminal.tip_appears()
+                    && remote_terminal.snapshot_contains("Tab #2")
+                    && remote_terminal.status_bar_appears()
+                {
+                    // cursor is in the newly opened second tab
+                    step_is_complete = true;
+                }
+                step_is_complete
+            },
+        });
+
+        let first_runner_snapshot = first_runner.take_snapshot_after(Step {
+            name: "Wait for new tab to open",
+            instruction: |remote_terminal: RemoteTerminal| -> bool {
+                let mut step_is_complete = false;
+                if remote_terminal.cursor_position_is(3, 2)
+                    && remote_terminal.tip_appears()
+                    && remote_terminal.snapshot_contains("Tab #2")
+                    && remote_terminal.status_bar_appears()
+                {
+                    // cursor is in the newly opened second tab
+                    step_is_complete = true;
+                }
+                step_is_complete
+            },
+        });
+
+        if (first_runner.test_timed_out || second_runner.test_timed_out) && test_attempts >= 0 {
+            test_attempts -= 1;
+            continue;
+        } else {
+            break (first_runner_snapshot, second_runner_snapshot);
+        }
+    };
+    assert_snapshot!(first_runner_snapshot);
+    assert_snapshot!(second_runner_snapshot);
+}
+
+#[test]
+#[ignore]
 pub fn bracketed_paste() {
     let fake_win_size = Size {
         cols: 120,
@@ -1410,7 +1667,6 @@ pub fn bracketed_paste() {
     let mut test_attempts = 10;
     let last_snapshot = loop {
         RemoteRunner::kill_running_sessions(fake_win_size);
-        drop(());
         let mut runner = RemoteRunner::new(fake_win_size).add_step(Step {
             name: "Send pasted text followed by normal text",
             instruction: |mut remote_terminal: RemoteTerminal| -> bool {
